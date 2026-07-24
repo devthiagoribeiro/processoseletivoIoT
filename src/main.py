@@ -13,7 +13,6 @@ alerta_emitido = False
 tempo_inicio_bloqueio = 0
 
 # Constantes de Calibração do Wokwi
-
 ADC_CLARO = 999   # Valor do ADC quando o LDR está sob luz do ambiente (ex: > 500 lux)
 ADC_ESCURO = 2045 # Valor do ADC quando o LDR está coberto (ex: < 100 lux)
 
