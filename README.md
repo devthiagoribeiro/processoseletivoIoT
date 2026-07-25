@@ -274,71 +274,87 @@ Preencha todas as seções abaixo de forma **clara, objetiva e técnica**.
 
 ### Identificação do Candidato
 
-- **Nome completo:**
-- **GitHub:**
+- **Nome completo: Thiago Roberto de Lima Ribeiro**
+- **GitHub: [devthiagoribeiro](https://github.com/devthiagoribeiro)**
 
 ---
 
 ## Visão Geral da Solução
 
-Descreva, em poucas palavras:
-
-- Qual é o objetivo do seu projeto
-- O que o sistema embarcado simulado faz
-- Como o usuário interage com ele (se aplicável)
+O projeto simula um sistema embarcado IoT para contagem automatizada de produção em uma esteira industrial. O sistema monitora a passagem de peças utilizando um sensor de luminosidade (simulando uma barreira óptica), contabiliza os itens, alerta sobre micro-paradas (obstruções na linha) e permite o reset manual do turno. A interação do usuário ocorre via alteração da luminosidade no LDR (simulando a passagem da peça) e acionamento de um botão físico para o reset dos contadores.
 
 ---
 
 ## Arquitetura do Sistema Embarcado
 
-Explique a arquitetura lógica do seu projeto, abordando:
+A arquitetura foi projetada com foco em execução contínua e não bloqueante.
 
-- Fluxo principal do programa (`main.py`)
-- Estrutura de estados, loops ou temporizações
-- Como os componentes interagem entre si
+## Fluxo principal (`main.py`)
 
-Se desejar, utilize tópicos ou um pequeno diagrama em texto.
+O firmware utiliza um **super-loop** (`while True`) com período de aproximadamente **20 ms**, responsável por realizar continuamente a leitura das entradas analógicas e digitais.
+
+## Estrutura de estados
+
+O controle de fluxo é baseado em *flags* booleanas (`peca_bloqueando` e `alerta_emitido`), garantindo que eventos como contagem de peças e emissão de alertas ocorram apenas durante as transições de estado, evitando múltiplos disparos para o mesmo evento.
 
 ---
 
 ## Componentes Utilizados na Simulação
 
-Liste os principais componentes definidos no `diagram.json`, por exemplo:
+O projeto foi desenvolvido utilizando uma **ESP32**, simulada no **Wokwi**, conectada aos seguintes periféricos:
 
-- Tipo de placa utilizada
-- LEDs, botões, sensores, atuadores, etc.
-- Função de cada componente no sistema
+| Componente | Função |
+|------------|--------|
+| **LDR (Fotoresistor) — GPIO 34 (ADC)** | Simula uma barreira óptica. A variação da luminosidade representa a passagem ou o bloqueio de uma peça na esteira. Foi utilizada atenuação de **11 dB**, aumentando a faixa útil de leitura do ADC. |
+| **Push Button — GPIO 4** | Configurado utilizando `PULL_DOWN`. Responsável por reiniciar os contadores e iniciar um novo turno de produção. |
 
 ---
 
 ## Decisões Técnicas Relevantes
 
-Explique brevemente decisões importantes tomadas durante o desenvolvimento, como:
+Em vez de utilizar um único valor de referência, foram definidos dois limites distintos:
 
-- Organização do código
-- Uso de funções, estados ou constantes
-- Estratégias para temporização ou controle lógico
+```python
+ADC_CLARO = 999
+ADC_ESCURO = 2045
+```
+
+Essa abordagem cria uma histerese por software, reduzindo leituras falsas durante a transição de luminosidade.
+
+## Controle de timeout no CI/CD
+
+A impressão da mensagem de reset foi estrategicamente posicionada para ocorrer **somente após a liberação do botão**.
+
+Essa decisão eliminou condições de corrida (*race conditions*) entre o firmware e o buffer serial utilizado pelo **Wokwi CLI** durante a execução dos testes automatizados no **GitHub Actions**, garantindo que as mensagens fossem capturadas exatamente no momento esperado.
+
+## Cronômetro utilizando `ticks_diff()`
+
+O alerta de micro-parada foi implementado utilizando `time.ticks_diff()` em vez de `time.sleep()`.
+
+Com isso, o microcontrolador permanece responsivo durante toda a execução, permitindo que o botão de reset continue funcionando imediatamente mesmo enquanto o temporizador está ativo.
 
 ---
 
 ## Resultados Obtidos
 
-Descreva o comportamento final do sistema:
 
-- O que funciona corretamente
-- Quais requisitos foram atendidos
-- Resultado observado na simulação do Wokwi
+- O firmware inicializa corretamente, exibindo a mensagem de inicialização (*boot*).
+- A contagem de peças ocorre exclusivamente durante a transição do estado bloqueado para livre, evitando contagens duplicadas.
+- O alerta de micro-parada é disparado exatamente após **5 segundos** de bloqueio contínuo, sem interromper a execução do sistema.
+- O reset manual reinicializa corretamente todos os contadores.
+- O comportamento temporal do firmware foi ajustado para atender aos testes automatizados do **GitHub Actions**, resultando em **Exit code 0** e validação completa da solução.
 
 ---
 
 ## Comentários Adicionais (Opcional)
 
-Utilize este espaço para comentar, se desejar:
+Um dos principais desafios técnicos foi compreender como o **Wokwi CLI** e o **GitHub Actions** sincronizam a execução do firmware com a captura da saída serial durante os testes automatizados.
 
-- Dificuldades encontradas
-- Limitações da solução
-- Melhorias que você faria com mais tempo
-- Principais aprendizados durante o desafio
+Inicialmente, a aplicação apresentava falhas de **Timeout (Exit code 42)**, mesmo com toda a lógica funcional implementada corretamente.
+
+Após a investigação, verificou-se que o problema não estava na lógica do firmware, mas sim em um desalinhamento temporal entre o momento em que o robô liberava o botão (aproximadamente **200 ms**) e o instante em que iniciava a leitura da porta serial.
+
+A solução consistiu em executar a rotina de reset apenas após a soltura do botão, eliminando completamente a condição de corrida e tornando a aplicação robusta tanto para uso normal quanto para validação automatizada.
 
 ---
 
