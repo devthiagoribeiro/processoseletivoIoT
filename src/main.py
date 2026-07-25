@@ -30,13 +30,14 @@ while True:
     if btn_val == 1:
         time.sleep_ms(50)
         if btn.value() == 1:
+            # Debounce do botão: espera até que o botão seja liberado
+            while btn.value() == 1:
+                time.sleep_ms(20)
             total_pecas = 0
             peca_bloqueando = False
             alerta_emitido = False
             print("Turno resetado com sucesso. Contadores zerados.")
-            # Debounce do botão: espera até que o botão seja liberado
-            while btn.value() == 1:
-                time.sleep_ms(20)
+            
     
     # Avalia se a peça está na frente (bloqueando a luz)
     estado_atual_bloqueado = (adc_val > ADC_ESCURO)
