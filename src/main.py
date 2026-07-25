@@ -41,13 +41,14 @@ while True:
     # Avalia se a peça está na frente (bloqueando a luz)
     estado_atual_bloqueado = (adc_val > ADC_ESCURO)
     
-    # Verifica se houve mudança de estado (de não bloqueado para bloqueado)
+    # Verifica se ainda não entrou na máquina de estados bloqueada
     if estado_atual_bloqueado and not peca_bloqueando:
-        peca_bloqueando = True
+        peca_bloqueando = True # Entra no estado do bloqueio
         tempo_inicio_bloqueio = time.ticks_ms()
         alerta_emitido = False
-        
-    elif not estado_atual_bloqueado and peca_bloqueando and (adc_val < ADC_CLARO):
+    
+    # Verifica se na ultima leitura a peça estava na frente do sensor e transicionou para linha livre
+    elif peca_bloqueando and (adc_val < ADC_CLARO):
         peca_bloqueando = False
         total_pecas += 1
         print(f"Peca detectada! Total: {total_pecas}")
