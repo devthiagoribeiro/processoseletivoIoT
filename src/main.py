@@ -4,7 +4,7 @@ import time
 # Configuração de Pinos
 ldr = machine.ADC(machine.Pin(34))
 ldr.atten(machine.ADC.ATTN_11DB)
-btn = machine.Pin(4, machine.Pin.IN, machine.Pin.PULL_UP)
+btn = machine.Pin(4, machine.Pin.IN, machine.Pin.PULL_DOWN)
 
 # Variáveis de Estado
 total_pecas = 0
@@ -24,7 +24,7 @@ print("Contador de Producao Inicializado")
 while True:
     # Leitura dos sensores
     adc_val = ldr.read()
-    btn_val = not (btn.value())
+    btn_val = btn.value()
 
     # Lógica de Reset do Turno
     if btn_val == 1:
